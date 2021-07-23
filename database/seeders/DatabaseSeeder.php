@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
                 'office' => 'IPD',
                 'full_name' => 'Mark Lester A. Bolotaolo',
                 'password' => Hash::make('password'),
-                'email' => 'mlab817@gmail.com'
+                'email' => 'mlab817@gmail.com',
+                'is_active' => 1
             ]);
         }
 

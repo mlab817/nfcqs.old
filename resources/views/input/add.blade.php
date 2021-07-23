@@ -11,35 +11,35 @@
                         <div class="row">
                             <div class="col-6">
                                 <label>Province</label>
-                                {!! Form::select('province_id', $provinces, '', ['class' => 'form-control']) !!}
+                                {!! Form::select('province_id', $provinces, 1, ['class' => 'form-control']) !!}
                             </div>
                             <div class="col-6">
                                 <label>Commodity</label>
-                                {!! Form::select('commodity_id', $commodities, '', ['class' => 'form-control']) !!}
+                                {!! Form::select('commodity_id', $commodities, 1, ['class' => 'form-control']) !!}
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-4">
                                 <label title="Most recent actual population">Population</label>
-                                {!! Form::text('population', '', ['class' => 'form-control']) !!}
+                                {!! Form::text('population', 1000000, ['class' => 'form-control']) !!}
                             </div>
                             <div class="col-4">
                                 <label title="Year of actual population data">Population Year</label>
-                                {!! Form::text('year', '', ['class' => 'form-control']) !!}
+                                {!! Form::text('year', 2010, ['class' => 'form-control']) !!}
                             </div>
                             <div class="col-4">
                                 <label title="Conversion Rate (in Percent)">Conversion Rate (%)</label>
-                                {!! Form::text('conversion_rate', '', ['class' => 'form-control']) !!}
+                                {!! Form::text('conversion_rate', 65.4, ['class' => 'form-control']) !!}
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-6">
                                 <label title="Per Capita Consumption for the Province (in Kilogram)">Per Capita Consumption (in kg/YR)</label>
-                                {!! Form::text('per_capita', '', ['class' => 'form-control']) !!}
+                                {!! Form::text('per_capita', 109.26, ['class' => 'form-control']) !!}
                             </div>
                             <div class="col-6">
                                 <label title="Year of actual per capita consumption">Per Capita Consumption Year</label>
-                                {!! Form::text('per_capita_year', '', ['class' => 'form-control']) !!}
+                                {!! Form::text('per_capita_year', 2009, ['class' => 'form-control']) !!}
                             </div>
                         </div>
                         <div class="row">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Crop;
+use App\Models\Population;
 use App\Models\SrcCommodity;
 use App\Models\SrcProvince;
 use Illuminate\Http\Request;
@@ -94,8 +95,8 @@ class InputController extends Controller
         $popGrowthRate = $request->file('pop_growth_rate');
 
         // file repo destination
-        $commodityDest = Storage::putFileAs('/uploads/commodity-data', $commodityData, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
-        $popGrowthDest = Storage::putFileAs('/uploads/pop-growth-rate', $commodityData, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+        $commodityDest = Storage::putFileAs('/public/uploads/commodity-data', $commodityData,  Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+        $popGrowthDest = Storage::putFileAs('/public/uploads/pop-growth-rate', $popGrowthRate, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
 
         // identify type of crop
         $typeCrop = SrcCommodity::find($commodityId);
@@ -123,12 +124,11 @@ class InputController extends Controller
         $crop->save();
 
         // save population
-        DB::table('population')
-            ->insert([
-                'crop_id' => $crop->id,
-                'year' => $year,
-                'population' => $population
-            ]);
+        $population = Population::create([
+            'crop_id' => $crop->id,
+            'year' => $request->year,
+            'population' => $request->population
+        ]);
 
         // import commodity data
         $this->importCommodityData($commodityData, $crop->id, $conversionRate, $typeCrop->crop_type);
@@ -210,7 +210,7 @@ class InputController extends Controller
     {
         // reading commodity data in csv format
         $reader = new Csv;
-        $excel = $reader->load(public_path($path));
+        $excel = $reader->load(storage_path($path));
 
         // set active sheet
         $excel->setActiveSheetIndex(0);
@@ -253,7 +253,7 @@ class InputController extends Controller
     {
         // reading commodity data in csv format
         $reader = new Csv;
-        $excel = $reader->load($path);
+        $excel = $reader->load(storage_path($path));
 
         // set active sheet
         $excel->setActiveSheetIndex(0);

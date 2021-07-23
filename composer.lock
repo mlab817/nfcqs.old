@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "67c3be3472dddf126b02f78bc212fe9d",
+    "content-hash": "deb62285062724039e198c0e0a6ed22c",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -1618,6 +1618,84 @@
             "time": "2021-01-18T20:58:21+00:00"
         },
         {
+            "name": "maatwebsite/excel",
+            "version": "3.1.32",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Maatwebsite/Laravel-Excel.git",
+                "reference": "9dc29b63a77fb7f2f514ef754af3a1b57e83cadf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Maatwebsite/Laravel-Excel/zipball/9dc29b63a77fb7f2f514ef754af3a1b57e83cadf",
+                "reference": "9dc29b63a77fb7f2f514ef754af3a1b57e83cadf",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "illuminate/support": "5.8.*|^6.0|^7.0|^8.0",
+                "php": "^7.0|^8.0",
+                "phpoffice/phpspreadsheet": "^1.18"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^6.0",
+                "predis/predis": "^1.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Maatwebsite\\Excel\\ExcelServiceProvider"
+                    ],
+                    "aliases": {
+                        "Excel": "Maatwebsite\\Excel\\Facades\\Excel"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Maatwebsite\\Excel\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Patrick Brouwers",
+                    "email": "patrick@maatwebsite.nl"
+                }
+            ],
+            "description": "Supercharged Excel exports and imports in Laravel",
+            "keywords": [
+                "PHPExcel",
+                "batch",
+                "csv",
+                "excel",
+                "export",
+                "import",
+                "laravel",
+                "php",
+                "phpspreadsheet"
+            ],
+            "support": {
+                "issues": "https://github.com/Maatwebsite/Laravel-Excel/issues",
+                "source": "https://github.com/Maatwebsite/Laravel-Excel/tree/3.1.32"
+            },
+            "funding": [
+                {
+                    "url": "https://laravel-excel.com/commercial-support",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/patrickbrouwers",
+                    "type": "github"
+                }
+            ],
+            "time": "2021-07-08T10:11:21+00:00"
+        },
+        {
             "name": "maennchen/zipstream-php",
             "version": "2.1.0",
             "source": {
@@ -1924,16 +2002,16 @@
         },
         {
             "name": "monolog/monolog",
-            "version": "2.3.1",
+            "version": "2.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Seldaek/monolog.git",
-                "reference": "9738e495f288eec0b187e310b7cdbbb285777dbe"
+                "reference": "71312564759a7db5b789296369c1a264efc43aad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/9738e495f288eec0b187e310b7cdbbb285777dbe",
-                "reference": "9738e495f288eec0b187e310b7cdbbb285777dbe",
+                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/71312564759a7db5b789296369c1a264efc43aad",
+                "reference": "71312564759a7db5b789296369c1a264efc43aad",
                 "shasum": ""
             },
             "require": {
@@ -2004,7 +2082,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Seldaek/monolog/issues",
-                "source": "https://github.com/Seldaek/monolog/tree/2.3.1"
+                "source": "https://github.com/Seldaek/monolog/tree/2.3.2"
             },
             "funding": [
                 {
@@ -2016,7 +2094,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-07-14T11:56:39+00:00"
+            "time": "2021-07-23T07:42:52+00:00"
         },
         {
             "name": "myclabs/php-enum",
@@ -8207,5 +8285,5 @@
         "php": "^7.3|^8.0"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.0.0"
+    "plugin-api-version": "2.1.0"
 }
