@@ -45,11 +45,11 @@
                         <div class="row">
                             <div class="col-6">
                                 <label class="commodity-name">Commodity Data</label>
-                                {!! Form::file('commodity_data', ['class' => 'form-control']) !!}
+                                {!! Form::file('commodity_data', ['class' => 'form-control','accept' => '.csv,.txt']) !!}
                             </div>
                             <div class="col-6">
                                 <label>Population Growth Rate</label>
-                                {!! Form::file('pop_growth_rate', ['class' => 'form-control']) !!}
+                                {!! Form::file('pop_growth_rate', ['class' => 'form-control','accept' => '.csv,.txt']) !!}
                             </div>
                         </div>
                     </div>

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Crop;
+use App\Models\SrcCommodity;
+use App\Models\SrcProvince;
 use Illuminate\Http\Request;
-use Validator;
-use Auth;
-use DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
 
 class InputController extends Controller
 {
@@ -18,36 +21,12 @@ class InputController extends Controller
 	 */
 	public function commodities(Request $request)
 	{
-        $data = [];
-
-        $provinces = DB::table('crop')
-            ->select('src_provinces.*')
-            ->leftJoin('src_provinces', 'crop.src_province_id', '=', 'src_provinces.id')
-            ->where('crop.src_province_id', '<>', null)
-            ->where('crop.user_id', Auth::user()->id)
-            ->distinct('province')
-            ->get();
-
-        if (sizeof($provinces) != 0) {
-            foreach ($provinces as $key => $val) {
-
-                $commodities = DB::table('crop')
-                    ->select('crop.*', 'src_commodities.commodity', 'src_commodities.crop_type')
-                    ->leftJoin('src_commodities', 'crop.src_commodity_id', '=', 'src_commodities.id')
-                    ->where('src_province_id', $val->id)
-                    ->where('crop.user_id', Auth::user()->id)
-                    ->distinct('crop.src_commodity_id')
-                    ->orderBy('src_commodities.id', 'ASC')
-                    ->get();
-
-                $val->commodities = $commodities;
-                $data[$key] = $val;
-
-            }
-        }
+        $provinces = SrcProvince::with('crops')->whereHas('crops', function ($query) {
+            $query->where('user_id', auth()->id());
+        })->get();
 
         return view('input.commodities')->with([
-            'data' => $data
+            'data' => $provinces
         ]);
     }
 
@@ -58,32 +37,12 @@ class InputController extends Controller
 	 */
 	public function addCommodity(Request $request)
 	{
-        $commodities = ['' => ''];
-        $provinces = ['' => ''];
-
-        $data = DB::table('src_commodities')
-            ->orderBy('commodity', 'ASC')
-            ->get();
-
-        if (sizeof($data) != 0) {
-            foreach ($data as $key) {
-                $commodities[$key->id] = $key->commodity;
-            }
-        }
-
-        $data = DB::table('src_provinces')
-            ->orderBy('province', 'ASC')
-            ->get();
-
-        if (sizeof($data) != 0) {
-            foreach ($data as $key) {
-                $provinces[$key->id] = $key->province;
-            }
-        }
+        $commodities = SrcCommodity::all('id','commodity');
+        $provinces = SrcProvince::all('id','province');
 
         return view('input.add')->with([
-            'commodities' => $commodities,
-            'provinces' => $provinces,
+            'commodities' => $commodities->mapWithKeys(function ($c) { return [$c->id => $c->commodity]; })->prepend('Select Commodity',''),
+            'provinces' => $provinces->mapWithKeys(function ($c) { return [$c->id => $c->province]; })->prepend('Select Province', ''),
         ]);
     }
 
@@ -94,13 +53,37 @@ class InputController extends Controller
 	 */
 	public function saveCommodity(Request $request)
 	{
-        $commodityId = $request->input('commodity_id');
-        $conversionRate = $request->input('conversion_rate');
-        $provinceId = $request->input('province_id');
-        $population = $request->input('population');
-        $year = $request->input('year');
-        $perCapita = $request->input('per_capita');
-        $perCapitaYear = $request->input('per_capita_year');
+	    $data = $request->all();
+	    $data['population'] = str_replace(',', '', $request->population);
+
+	    $validator = Validator::make($data, [
+            'commodity_id'      => 'required|exists:src_commodities,id',
+            'conversion_rate'   => 'required|numeric|min:0|max:100',
+            'province_id'       => 'required|exists:src_provinces,id',
+            'population'        => 'required|integer',
+            'year'              => 'required|integer|min:1900|max:'.date('Y'),
+            'per_capita'        => 'required|numeric|min:0',
+            'per_capita_year'   => 'required|numeric|min:1900|max:'.date('Y'),
+            'commodity_data'    => 'required|mimes:csv,txt',
+            'pop_growth_rate'   => 'required|mimes:csv,txt'
+        ]);
+
+	    if ($validator->fails()) {
+	        return $validator->errors();
+        }
+
+        $commodityId = $request->commodity_id;
+        $commodity = SrcCommodity::find($commodityId);
+
+        $conversionRate = $request->conversion_rate;
+
+        $provinceId = $request->province_id;
+        $province = SrcProvince::find($provinceId);
+
+        $population = $request->population;
+        $year = $request->year;
+        $perCapita = $request->per_capita;
+        $perCapitaYear = $request->per_capita_year;
 
         // remove commas & percent sign to number
         $population = str_replace(',', '', $population);
@@ -110,153 +93,111 @@ class InputController extends Controller
         $commodityData = $request->file('commodity_data');
         $popGrowthRate = $request->file('pop_growth_rate');
 
-        // validation
-        $validator = Validator::make(
-            [
-                'commodity_id' => $commodityId,
-                'conversion_rate' => $conversionRate,
-                'province_id' => $provinceId,
-                'population' => $population,
+        // file repo destination
+        $commodityDest = Storage::putFileAs('/uploads/commodity-data', $commodityData, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+        $popGrowthDest = Storage::putFileAs('/uploads/pop-growth-rate', $commodityData, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+
+        // identify type of crop
+        $typeCrop = SrcCommodity::find($commodityId);
+
+        // check for errors in commodity data
+        $error1 = $this->checkCommodityData($commodityDest, $typeCrop->crop_type);
+
+        // check for errors in pop growth rate
+        $error2 = $this->checkPopGrowthRate($popGrowthDest, $year);
+
+        // return errors if any
+        if ($error1) {
+            return $error1;
+        } elseif ($error2) {
+            return $error2;
+        }
+
+        // convert percent to decimal value
+        $conversionRate = $conversionRate / 100;
+
+        // save crop details
+        $crop = Crop::create($request->except('crop_data_filename','pop_data_filename'));
+        $crop->crop_data_filename = $commodityDest;
+        $crop->pop_data_filename = $popGrowthDest;
+        $crop->save();
+
+        // save population
+        DB::table('population')
+            ->insert([
+                'crop_id' => $crop->id,
                 'year' => $year,
-                'commodity_data' => $commodityData,
-                'pop_growth_rate' => $popGrowthRate,
-                'per_capita' => $perCapita,
-                'per_capita_year' => $perCapitaYear
-            ], [
-                'commodity_id' => 'required|numeric',
-                'conversion_rate' => 'required|numeric',
-                'province_id' => 'required|numeric',
-                'population' => 'required|numeric',
-                'year' => 'required|numeric',
-                'per_capita' => 'required|numeric',
-                'per_capita_year' => 'required|numeric',
-                'commodity_data' => 'required|mimes:csv,txt',
-                'pop_growth_rate' => 'required|mimes:csv,txt'
+                'population' => $population
             ]);
 
-        if (!$validator->fails()) {
-            
-            // file repo destination
-            $commodityDest = 'uploads/commodity-data/' . $provinceId . '+' . $commodityId . '-' . strtoupper(rand()) . '.csv';
-            $popGrowthDest = 'uploads/pop-growth-rate/' . $provinceId . '+' . $commodityId . '-' . strtoupper(rand()) . '.csv';
-            
-            // copy the files
-            copy($commodityData, $commodityDest);
-            copy($popGrowthRate, $popGrowthDest);
+        // import commodity data
+        $this->importCommodityData($commodityData, $crop->id, $conversionRate, $typeCrop->crop_type);
 
-            // identify type of crop
-            $typeCrop = DB::table('src_commodities')
-                ->where('id', $commodityId)
-                ->first();
+        if ($typeCrop->crop_type == 'crops') {
 
-            // check for errors in commodity data
-            $error1 = $this->checkCommodityData($commodityDest, $typeCrop->crop_type);
+            // compute slope
+            $slopeArea = $this->calculateSlope($crop->id, 'crop_data', 'ln_area');
+            $slopeYield = $this->calculateSlope($crop->id, 'crop_data', 'ln_yield');
+            $slopeConsumption = $this->calculateSlope($crop->id, 'crop_data', 'ln_consumption');
 
-            // check for errors in pop growth rate
-            $error2 = $this->checkPopGrowthRate($popGrowthDest, $year);
-
-            // return errors if any
-            if ($error1) {
-                return $error1;
-            } elseif ($error2) {
-                return $error2;
-            }
-
-            // convert percent to decimal value
-            $conversionRate = $conversionRate / 100;
-
-            // save crop details
-            $cropId = DB::table('crop')
-                ->insertGetId([
-                    'user_id' => Auth::user()->id,
-                    'src_province_id' => $provinceId,
-                    'src_commodity_id' => $commodityId,
-                    'conversion_rate' => $conversionRate,
-                    'crop_data_filename' => $commodityDest,
-                    'pop_data_filename' => $popGrowthDest,
-                    'per_capita_consumption_kg_yr' => $perCapita,
-                    'per_capita_year' => $perCapitaYear
-                ]);
-
-            // save population
-            DB::table('population')
+            // save slope
+            DB::table('crop_slope')
                 ->insert([
-                    'crop_id' => $cropId,
-                    'year' => $year,
-                    'population' => $population
+                    'crop_id' => $crop->id,
+                    'area' => $slopeArea,
+                    'yield' => $slopeYield,
+                    'consumption' => $slopeConsumption
                 ]);
 
-            // import commodity data
-            $this->importCommodityData($commodityData, $cropId, $conversionRate, $typeCrop->crop_type);
+            // compute annualize growth rate
+            $agrArea = $this->calculateAnnGrowthRate($crop->id, 'crop_data', 'harvested_area_ha');
+            $agrYield = $this->calculateAnnGrowthRate($crop->id, 'crop_data', 'yield_mt_ha');
+            $agrConsumption = $this->calculateAnnGrowthRate($crop->id, 'crop_data', 'per_capita_consumption_kg_yr');
 
-            if ($typeCrop->crop_type == 'Crop') {
+            // save anualize growth rate
+            DB::table('crop_annualized_growth_rate')
+                ->insert([
+                    'crop_id' => $crop->id,
+                    'area' => $agrArea,
+                    'yield' => $agrYield,
+                    'consumption' => $agrConsumption
+                ]);
 
-                // compute slope
-                $slopeArea = $this->calculateSlope($cropId, 'crop_data', 'ln_area');
-                $slopeYield = $this->calculateSlope($cropId, 'crop_data', 'ln_yield');
-                $slopeConsumption = $this->calculateSlope($cropId, 'crop_data', 'ln_consumption');
+        } elseif ($typeCrop->crop_type == 'Non-crops') {
 
-                // save slope
-                DB::table('crop_slope')
-                    ->insert([
-                        'crop_id' => $cropId,
-                        'area' => $slopeArea,
-                        'yield' => $slopeYield,
-                        'consumption' => $slopeConsumption
-                    ]);
+            // compute slope
+            $slopeProduction = $this->calculateSlope($crop->id, 'non_crop_data', 'ln_production');
+            $slopeConsumption = $this->calculateSlope($crop->id, 'non_crop_data', 'ln_consumption');
 
-                // compute annualize growth rate
-                $agrArea = $this->calculateAnnGrowthRate($cropId, 'crop_data', 'harvested_area_ha');
-                $agrYield = $this->calculateAnnGrowthRate($cropId, 'crop_data', 'yield_mt_ha');
-                $agrConsumption = $this->calculateAnnGrowthRate($cropId, 'crop_data', 'per_capita_consumption_kg_yr');
+            // save slope
+            DB::table('non_crop_slope')
+                ->insert([
+                    'crop_id' => $crop->id,
+                    'production' => $slopeProduction,
+                    'consumption' => $slopeConsumption
+                ]);
 
-                // save anualize growth rate
-                DB::table('crop_annualized_growth_rate')
-                    ->insert([
-                        'crop_id' => $cropId,
-                        'area' => $agrArea,
-                        'yield' => $agrYield,
-                        'consumption' => $agrConsumption
-                    ]);
+            // compute annualize growth rate
+            $agrProduction = $this->calculateAnnGrowthRate($crop->id, 'non_crop_data', 'production_mt');
+            $agrConsumption = $this->calculateAnnGrowthRate($crop->id, 'non_crop_data', 'per_capita_consumption_kg_yr');
 
-            } elseif ($typeCrop->crop_type == 'Non-Crop') {
+            // save anualize growth rate
+            DB::table('non_crop_annualized_growth_rate')
+                ->insert([
+                    'crop_id' => $crop->id,
+                    'production' => $agrProduction,
+                    'consumption' => $agrConsumption
+                ]);
 
-                // compute slope
-                $slopeProduction = $this->calculateSlope($cropId, 'non_crop_data', 'ln_production');
-                $slopeConsumption = $this->calculateSlope($cropId, 'non_crop_data', 'ln_consumption');
-
-                // save slope
-                DB::table('non_crop_slope')
-                    ->insert([
-                        'crop_id' => $cropId,
-                        'production' => $slopeProduction,
-                        'consumption' => $slopeConsumption
-                    ]);
-
-                // compute annualize growth rate
-                $agrProduction = $this->calculateAnnGrowthRate($cropId, 'non_crop_data', 'production_mt');
-                $agrConsumption = $this->calculateAnnGrowthRate($cropId, 'non_crop_data', 'per_capita_consumption_kg_yr');
-
-                // save anualize growth rate
-                DB::table('non_crop_annualized_growth_rate')
-                    ->insert([
-                        'crop_id' => $cropId,
-                        'production' => $agrProduction,
-                        'consumption' => $agrConsumption
-                    ]);
-
-            }
-
-            // import population growth rate
-            $this->importPopGrowthRate($popGrowthDest, $cropId, $population);
-
-            // create file source for auto-arima model
-            $this->createAutoArimaSrcData($cropId, $typeCrop->crop_type);
-
-            return "Successfully saved.";
-        } else {
-            return $validator->errors();
         }
+
+        // import population growth rate
+        $this->importPopGrowthRate($popGrowthDest, $crop->id, $population);
+
+        // create file source for auto-arima model
+        $this->createAutoArimaSrcData($crop->id, $typeCrop->crop_type);
+
+        return "Successfully saved.";
     }
 
     /**
@@ -268,8 +209,8 @@ class InputController extends Controller
     private function checkCommodityData($path, $cropType)
     {
         // reading commodity data in csv format
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
-        $excel = $reader->load($path);
+        $reader = new Csv;
+        $excel = $reader->load(public_path($path));
 
         // set active sheet
         $excel->setActiveSheetIndex(0);
@@ -283,9 +224,9 @@ class InputController extends Controller
         // -> b. Area Harvested
         // -> c. Production
         // -> d. Per Capita Consumption
-        if ($cropType == 'Crop' AND $lastColumn != 'D') {
+        if ($cropType == 'crops' AND $lastColumn != 'D') {
             return ['commodity_data' => 'Column out of range.'];
-        } elseif ($cropType == 'Crop' AND $lastRow < 6) {
+        } elseif ($cropType == 'crops' AND $lastRow < 6) {
             return ['commodity_data' => 'Row out of range.'];
         }
 
@@ -293,9 +234,9 @@ class InputController extends Controller
         // -> a. Year
         // -> b. Production
         // -> c. Per Capita Consumption
-        if ($cropType == 'Non-Crop' AND $lastColumn != 'C') {
+        if ($cropType == 'Non-crops' AND $lastColumn != 'C') {
             return ['commodity_data' => 'Column out of range.'];
-        } elseif ($cropType == 'Non-Crop' AND $lastRow < 6) {
+        } elseif ($cropType == 'Non-crops' AND $lastRow < 6) {
             return ['commodity_data' => 'Row out of range.'];
         }
 
@@ -311,7 +252,7 @@ class InputController extends Controller
     private function checkPopGrowthRate($path, $year)
     {
         // reading commodity data in csv format
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+        $reader = new Csv;
         $excel = $reader->load($path);
 
         // set active sheet
@@ -352,7 +293,7 @@ class InputController extends Controller
     private function importCommodityData($path, $cropId, $rate, $cropType)
     {
         // reading commodity data in csv format
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+        $reader = new Csv;
         $excel = $reader->load($path);
 
         // set active sheet
@@ -366,7 +307,7 @@ class InputController extends Controller
 
             $year = $excel->getActiveSheet()->getCell('A' . $row)->getValue();
 
-            if ($cropType == 'Crop') {
+            if ($cropType == 'crops') {
 
                 $area = $excel->getActiveSheet()->getCell('B' . $row)->getValue();
                 $production = $excel->getActiveSheet()->getCell('C' . $row)->getValue();
@@ -412,7 +353,7 @@ class InputController extends Controller
                         'ln_consumption' => $lnConsumption
                     ]);
 
-            } elseif ($cropType == 'Non-Crop') {
+            } elseif ($cropType == 'Non-crops') {
 
                 $production = $excel->getActiveSheet()->getCell('B' . $row)->getValue();
                 $consumption = $excel->getActiveSheet()->getCell('C' . $row)->getValue();
@@ -517,7 +458,7 @@ class InputController extends Controller
     private function importPopGrowthRate($path, $cropId, $population)
     {
         // reading commodity data in csv format
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+        $reader = new Csv;
         $excel = $reader->load($path);
 
         // set active sheet
@@ -562,7 +503,7 @@ class InputController extends Controller
      */
     private function createAutoArimaSrcData($cropId, $cropType)
     {
-        if ($cropType == 'Crop') {
+        if ($cropType == 'crops') {
 
             // file path
             $areaPath = 'uploads/commodity-data/auto-arima/input/area-' . $cropId . '.csv';
@@ -587,7 +528,7 @@ class InputController extends Controller
             if (sizeof($data) != 0) {
 
                 // populate data to area
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+                $reader = new Csv;
                 $excel = $reader->load($areaPath);
                 $excel->setActiveSheetIndex(0);
                 $sheet = $excel->getActiveSheet();
@@ -616,7 +557,7 @@ class InputController extends Controller
         	    $writer->save($areaPath);
 
                 // populate data to yield
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+                $reader = new Csv;
                 $excel = $reader->load($yieldPath);
                 $excel->setActiveSheetIndex(0);
                 $sheet = $excel->getActiveSheet();
@@ -645,7 +586,7 @@ class InputController extends Controller
                 $writer->save($yieldPath);
 
                 // populate data to consumption
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+                $reader = new Csv;
                 $excel = $reader->load($consumptionPath);
                 $excel->setActiveSheetIndex(0);
                 $sheet = $excel->getActiveSheet();
@@ -697,7 +638,7 @@ class InputController extends Controller
             if (sizeof($data) != 0) {
 
                 // populate data to production
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+                $reader = new Csv;
                 $excel = $reader->load($productionPath);
                 $excel->setActiveSheetIndex(0);
                 $sheet = $excel->getActiveSheet();
@@ -726,7 +667,7 @@ class InputController extends Controller
                 $writer->save($productionPath);
 
                 // populate data to consumption
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv;
+                $reader = new Csv;
                 $excel = $reader->load($consumptionPath);
                 $excel->setActiveSheetIndex(0);
                 $sheet = $excel->getActiveSheet();
@@ -844,8 +785,8 @@ class InputController extends Controller
 
         $commodity = DB::table('src_commodities')
             ->select('src_commodities.crop_type')
-            ->leftJoin('crop', 'src_commodities.id', '=', 'crop.src_commodity_id')
-            ->where('crop.id', $cropId)
+            ->leftJoin('crops', 'src_commodities.id', '=', 'crops.src_commodity_id')
+            ->where('crops.id', $cropId)
             ->first();
 
         return view('input.shifter')->with([
@@ -1022,7 +963,7 @@ class InputController extends Controller
     }
 
     /**
-     * Delete crop.
+     * Delete crops.
      *
      * @param Request $request
      */
@@ -1031,17 +972,17 @@ class InputController extends Controller
         $cropId = $request->input('key');
 
         // crop details
-        $commodity = DB::table('crop')
+        $commodity = DB::table('crops')
             ->select('src_commodities.crop_type')
-            ->leftJoin('src_commodities', 'crop.src_commodity_id', '=', 'src_commodities.id')
-            ->where('crop.id', $cropId)
+            ->leftJoin('src_commodities', 'crops.src_commodity_id', '=', 'src_commodities.id')
+            ->where('crops.id', $cropId)
             ->first();
 
         // crop type
         $type = strtolower(str_ireplace("-", "_", $commodity->crop_type));
 
         // deleting
-        DB::table('crop')->where('id', $cropId)->delete();
+        DB::table('crops')->where('id', $cropId)->delete();
         DB::table($type . '_annualized_growth_rate')->where('crop_id', $cropId)->delete();
         DB::table($type . '_slope')->where('crop_id', $cropId)->delete();
         DB::table($type . '_data')->where('crop_id', $cropId)->delete();

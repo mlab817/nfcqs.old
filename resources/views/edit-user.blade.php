@@ -1,4 +1,4 @@
-@extends('app')
+@extends('layouts.app')
 @section('content')
 <div id="page-content-wrapper">
     <div class="container-fluid">
@@ -20,7 +20,7 @@
                 </div>
             </div>
         @endif
-        {!! Form::open(['url' => 'user/update', 'method' => 'post']) !!}
+        {!! Form::open(['url' => route('users.update', $user->id), 'method' => 'PUT']) !!}
             <div class="row">
                 <div class="col-8">
                     <label>Office</label>
@@ -50,11 +50,11 @@
             <div class="row" style="margin-top:25px">
                 <div class="col-4">
                     {!! Form::submit('Save Changes', ['class' => 'btn btn-primary']) !!}
-                    <a a href="{{ url('users') }}" class="btn btn-danger">Cancel</a>
+                    <a a href="{{ route('users.index') }}" class="btn btn-danger">Cancel</a>
                 </div>
             </div>
 
-            {!! Form::hidden('id', $id) !!}
+            {!! Form::hidden('id', $user->id) !!}
         {!! Form::close() !!}
     </div>
 </div>

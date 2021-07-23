@@ -1,4 +1,5 @@
 @extends('app')
+
 @section('content')
 <div id="page-content-wrapper">
     <div class="container-fluid">
