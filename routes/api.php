@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\HandleArimaController;
+use App\Http\Controllers\Api\HandleCagrController;
+use App\Http\Controllers\Api\HandleLttController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +20,13 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/', function () {
+    return 'index of api';
+});
+
+Route::post('handle_ltt', HandleLttController::class);
+
+Route::post('handle_cagr', HandleCagrController::class);
+
+Route::post('handle_arima', HandleArimaController::class);
