@@ -15,7 +15,8 @@
     "laravel/ui": "^3.3",
     "laravelcollective/html": "^6.2",
     "maatwebsite/excel": "^3.1",
-    "phpoffice/phpspreadsheet": "^1.18"
+    "phpoffice/phpspreadsheet": "^1.18",
+    "ext-json": "*"
   },
   "require-dev": {
     "facade/ignition": "^2.5",

@@ -17,20 +17,17 @@ class HandleLttController extends Controller
      */
     public function __invoke(Request $request)
     {
-        $data = $request->all();
+        $json = $request->getContent();
 
-        if (!empty($data)) {
-            $jsonData = $data[0];
-            $arrayData = json_decode($jsonData, true);
-            Log::info(json_encode($arrayData));
-        }
+        $data = json_decode($json);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $filePath = Storage::put('/uploads/', $file);
-            Log::debug('file path: ' . $filePath);
-        }
+        Log::info($data->mape);
+        Log::info(json_encode($data->regression_params));
+        Log::info(json_encode($data->data));
+        Log::info($data->model);
+        Log::info($data->x_variable);
+        Log::info($data->y_variable);
 
-        return response()->json('All ok', 200);
+        return response()->json($json, 200);
     }
 }
