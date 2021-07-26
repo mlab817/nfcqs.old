@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use DB;
-use App\User;
+use App\Models\User;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Http\Request;
-use Redirect;
+use Illuminate\Support\Facades\Redirect;
 
 class RegisterController extends Controller
 {
@@ -71,8 +71,8 @@ class RegisterController extends Controller
             'office' => $data['office'],
             'full_name' => $data['full_name'],
             'email' => $data['email'],
-            'is_active' => 0,
-            'password' => bcrypt($data['password']),
+            'is_active' => 1,
+            'password' => Hash::make($data['password']),
             'created_at' => date("Y-m-d H:i:s"),
         ]);
     }
