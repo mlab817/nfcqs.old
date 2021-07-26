@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Population extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'year',
+        'population',
+    ];
 }

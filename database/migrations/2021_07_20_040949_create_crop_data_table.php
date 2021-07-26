@@ -27,9 +27,9 @@ class CreateCropDataTable extends Migration
             $table->decimal('ln_area',25,15)->default(0);
             $table->decimal('ln_yield',25,15)->default(0);
             $table->decimal('ln_consumption',25,15)->default(0);
-            $table->foreignId('src_commodity_id')->constrained();
-            $table->foreignId('user_id')->constrained();
-            $table->enum('source',['user','system']);
+            $table->foreignId('src_commodity_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->enum('source',['user','system'])->nullable();
             $table->timestamps();
         });
     }
