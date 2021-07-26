@@ -281,11 +281,11 @@ class InputController extends Controller
     {
         $url = config('nfcqs.PYTHON_APP');
 
-        Http::attach('file', $file)->post($url, [
+        $response = Http::attach('file', fopen($file, 'r'))->post($url, [
             'user_id' => auth()->id(),
             'crop_id' => $cropId,
             'conversion_rate' => $conversionRate,
-            'crop_type' => $cropType
+            'crop_type' => $cropType,
         ]);
     }
 
@@ -691,7 +691,7 @@ class InputController extends Controller
      *
      * @param Request $request
      */
-    public function deleteCrop(Request $request)
+    public function deleteCrop(Request $request): array
     {
         $cropId = $request->input('key');
 

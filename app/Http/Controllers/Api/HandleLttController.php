@@ -18,17 +18,16 @@ class HandleLttController extends Controller
      */
     public function __invoke(Request $request)
     {
-        $json = $request->getContent();
+        $data = json_decode($request->getContent(), true);
 
-        $data = json_decode($json);
+        // handle save data
+        Log::info($data['mape']);
+        Log::info(json_encode($data['regression_params']));
+        Log::info(json_encode($data['data']));
+        Log::info($data['model']);
+        Log::info($data['x_variable']);
+        Log::info($data['y_variable']);
 
-        Log::info($data->mape);
-        Log::info(json_encode($data->regression_params));
-        Log::info(json_encode($data->data));
-        Log::info($data->model);
-        Log::info($data->x_variable);
-        Log::info($data->y_variable);
-
-        return response()->json($json, 200);
+        return response()->json($data, 200);
     }
 }
