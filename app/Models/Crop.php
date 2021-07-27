@@ -54,6 +54,11 @@ class Crop extends Model
         return $this->belongsTo(SrcProvince::class,'src_province_id');
     }
 
+    public function results(): HasMany
+    {
+        return $this->hasMany(Result::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

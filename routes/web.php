@@ -47,7 +47,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('reports/list', [InputController::class,'reportList'])->name('report_list');
     Route::get('shifter', [InputController::class,'addShifter'])->name('add_shifter');
     Route::get('import-baseline', [InputController::class,'importBaseline'])->name('import_baseline');
-    Route::get('crop/delete', [InputController::class,'deleteCrop'])->name('delete_crop');
+    Route::delete('crop/{crop}/delete', [InputController::class,'deleteCrop'])->name('delete_crop');
 
     // forecast
     Route::post('forecast', [ForecastController::class,'forecast'])->name('forecast.post');
@@ -70,4 +70,13 @@ Route::post('/save_file', function (\Illuminate\Http\Request $request) {
     $file = $request->file('file');
     \Illuminate\Support\Facades\Storage::put('uploads', $file);
     return response()->json('saved data',200);
+});
+
+
+Route::get('/exec', function() {
+    $script = base_path() . '/scripts/test.py';
+    $name = 'Lester';
+    $command = escapeshellcmd("python $script $name 2>&1");
+    $output = shell_exec($command);
+    echo $output;
 });

@@ -28,7 +28,18 @@
                                         @if ($k->remarks != null)
                                             <a href="{{ url('result?key=' . $k->id) }}" style="white-space:nowrap; color:orange"><i class="fas fa-chart-line"></i>View Forecast Result</a>
                                         @endif
-                                        <a href="{{ url('crop/delete?key=' . $k->id) }}" class="delete-record" style="white-space:nowrap; color:red"><i class="fas fa-trash"></i>Delete</a>
+                                        <form action="{{ route('delete_crop', ['crop' => $k]) }}" method="POST" id="delete_record_{{$k->id}}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <a
+                                                onclick="confirm('Are you sure you want to delete this item?'); return document.getElementById('delete_record_{{$k->id}}').submit()"
+                                                href="javascript:{}"
+                                                role="button"
+                                                style="white-space:nowrap; color:red">
+                                                <i class="fas fa-trash"></i>
+                                                Delete
+                                            </a>
+                                        </form>
                                     </td>
                                 </tr>
                             @endforeach

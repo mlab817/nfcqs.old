@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\SrcProvince;
 use Illuminate\Http\Request;
-use Auth;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Set maximum execution time
@@ -33,19 +32,15 @@ class DownloadController extends Controller
         $forecast = [];
 
         // get province details
-        $p = DB::table('src_provinces')
-            ->where('province', $province)
-            ->first();
+        $p = SrcProvince::where('province', $province)->first();
 
-        // province id
-        $provinceId = ($p != null) ? $p->id : 0;
-
+        $__commodities = [];
         // get list of commodities of the province
         $__commodities = DB::table('crop')
             ->select('src_commodities.*', 'crop.id as crop_id', 'crop.conversion_rate', 'crop.remarks')
             ->leftJoin('src_commodities', 'crop.src_commodity_id', '=', 'src_commodities.id')
-            ->where('src_province_id', $provinceId)
-            ->where('crop.user_id', Auth::user()->id)
+            ->where('src_province_id', $p->id)
+            ->where('crop.user_id', auth()->id())
             ->groupBy('crop.id')
             ->orderBy('src_commodities.id', 'ASC')
             ->get();

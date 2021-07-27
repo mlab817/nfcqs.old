@@ -15,6 +15,12 @@ class CreateResultsTable extends Migration
     {
         Schema::create('results', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('crop_id')->constrained();
+            $table->year('year');
+            $table->decimal('ltt_production', 25, 15)->nullable();
+            $table->decimal('cagr_production', 25, 15)->nullable();
+            $table->decimal('arima_production', 25, 15)->nullable();
+            $table->decimal('consumption', 25, 15)->nullable();
             $table->timestamps();
         });
     }

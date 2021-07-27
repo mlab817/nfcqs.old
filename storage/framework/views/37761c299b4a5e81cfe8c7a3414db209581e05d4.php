@@ -27,7 +27,18 @@
                                         <?php if($k->remarks != null): ?>
                                             <a href="<?php echo e(url('result?key=' . $k->id)); ?>" style="white-space:nowrap; color:orange"><i class="fas fa-chart-line"></i>View Forecast Result</a>
                                         <?php endif; ?>
-                                        <a href="<?php echo e(url('crop/delete?key=' . $k->id)); ?>" class="delete-record" style="white-space:nowrap; color:red"><i class="fas fa-trash"></i>Delete</a>
+                                        <form action="<?php echo e(route('delete_crop', ['crop' => $k])); ?>" method="POST" id="delete_record_<?php echo e($k->id); ?>">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
+                                            <a
+                                                onclick="confirm('Are you sure you want to delete this item?'); return document.getElementById('delete_record_<?php echo e($k->id); ?>').submit()"
+                                                href="javascript:{}"
+                                                role="button"
+                                                style="white-space:nowrap; color:red">
+                                                <i class="fas fa-trash"></i>
+                                                Delete
+                                            </a>
+                                        </form>
                                     </td>
                                 </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
