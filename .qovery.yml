@@ -1,0 +1,20 @@
+---
+application:
+  name: "nfcqs-old"
+  project: "da-nfcqs"
+  organization: "QoveryCommunity"
+  storage:
+  - name: "public"
+    size: "10"
+    type: "fast_ssd"
+    mount_point: "/mnt/public"
+databases:
+- type: "MYSQL"
+  name: "nfcqs"
+  version: "8.0"
+routers:
+- name: "main-nfcqs-old"
+  routes:
+  - application_name: "nfcqs-old"
+    paths:
+    - "/*"
