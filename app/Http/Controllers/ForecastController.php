@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Validator;
-use Auth;
-use DB;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ForecastController extends Controller
 {
@@ -385,11 +384,11 @@ class ForecastController extends Controller
      * Logarithmic Time Trend
      * for production forecast.
      *
-     * @param int       $cropId
-     * @param int       $year
-     * @param string    $table
+     * @param int $cropId
+     * @param int $year
+     * @param string $table
      */
-    private function logarithmicTimeTrendProduction($cropId, $year, $table)
+    private function logarithmicTimeTrendProduction(int $cropId, int $year, string $table)
     {
         // slope values
         $slope = DB::table($table . '_slope')
