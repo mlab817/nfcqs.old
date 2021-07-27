@@ -14,9 +14,9 @@ class RunModelsInPythonJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $commodityData;
+    public $commodityPath;
 
-    public $populationData;
+    public $populationPath;
 
     public $cropId;
 
@@ -36,8 +36,8 @@ class RunModelsInPythonJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct($commodityData,
-                                $populationData,
+    public function __construct($commodityPath,
+                                $populationPath,
                                 $cropId,
                                 $conversionRate,
                                 $cropType,
@@ -45,8 +45,8 @@ class RunModelsInPythonJob implements ShouldQueue
                                 $populationYear,
                                 $perCapita)
     {
-        $this->commodityData = $commodityData;
-        $this->populationData = $populationData;
+        $this->commodityPath = $commodityPath;
+        $this->populationPath = $populationPath;
         $this->cropId = $cropId;
         $this->conversionRate = $conversionRate;
         $this->cropType = $cropType;
@@ -64,8 +64,8 @@ class RunModelsInPythonJob implements ShouldQueue
     {
         $url = config('nfcqs.PYTHON_APP');
 
-        $file1 = fopen($this->commodityData, 'r');
-        $file2 = fopen($this->populationData, 'r');
+        $file1 = fopen($this->commodityPath, 'r');
+        $file2 = fopen($this->populationPath, 'r');
 
         $response = Http::attach('commodity_data', $file1)
             ->attach('population_data', $file2)->post($url, [

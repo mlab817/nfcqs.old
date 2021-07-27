@@ -121,8 +121,8 @@ class InputController extends Controller
             'pop_data_filename' => $popGrowthDest
         ]);
 
-        dispatch(new RunModelsInPythonJob($commodityData,
-            $popGrowthRate,
+        dispatch(new RunModelsInPythonJob($commodityDest,
+            $popGrowthDest,
             $crop->id,
             $conversionRate,
             $commodity->crop_type,
