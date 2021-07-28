@@ -25,7 +25,13 @@ class DownloadController extends Controller
         $model = $request->input('model');
         $download = $request->input('download');
 
-        // get province details
-        $p = SrcProvince::where('province', $province)->first();
+        $chart = [];
+        $province = SrcProvince::where('province', $province)->firstOrFail()->province ?? '';
+
+        return view('dashboard.province')->with([
+            'chart' => $chart,
+            'model' => $model,
+            'province' => $province
+        ]);
     }
 }

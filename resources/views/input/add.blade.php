@@ -44,11 +44,17 @@
                     </div>
                     <div class="row">
                         <div class="col-6">
-                            <label class="commodity-name">Commodity Data</label>
+                            <label class="commodity-name">
+                                Commodity Data
+                                <a href="#">Template</a>
+                            </label>
                             {!! Form::file('commodity_data', ['class' => 'form-control','accept' => '.csv,.txt']) !!}
                         </div>
                         <div class="col-6">
-                            <label>Population Growth Rate</label>
+                            <label>
+                                Population Growth Rate
+                                <a href="#">Template</a>
+                            </label>
                             {!! Form::file('pop_growth_rate', ['class' => 'form-control','accept' => '.csv,.txt']) !!}
                         </div>
                     </div>
