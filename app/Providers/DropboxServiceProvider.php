@@ -32,7 +32,7 @@ class DropboxServiceProvider extends ServiceProvider
                 $config['authorization_token']
             );
 
-            return new Filesystem(new DropboxAdapter($client));
+            return new Filesystem(new DropboxAdapter($client), ['case_sensitive' => false]);
         });
     }
 }

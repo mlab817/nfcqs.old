@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class RunModelsInPythonJob implements ShouldQueue
 {
@@ -64,8 +65,8 @@ class RunModelsInPythonJob implements ShouldQueue
     {
         $url = config('nfcqs.PYTHON_APP');
 
-        $file1 = fopen($this->commodityPath, 'r');
-        $file2 = fopen($this->populationPath, 'r');
+        $file1 = Storage::disk('dropbox')->get($this->commodityPath);
+        $file2 = Storage::disk('dropbox')->get($this->populationPath);
 
         $response = Http::attach('commodity_data', $file1)
             ->attach('population_data', $file2)->post($url, [

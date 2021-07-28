@@ -103,8 +103,10 @@ class InputController extends Controller
         $popGrowthRate = $request->file('pop_growth_rate');
 
         // file repo destination
-        $commodityDest = Storage::putFileAs('/public/uploads/commodity-data', $commodityData,  Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
-        $popGrowthDest = Storage::putFileAs('/public/uploads/pop-growth-rate', $popGrowthRate, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+        $commodityDest = Storage::disk('dropbox')->putFileAs('/apps/nfcqs/commodity-data', $commodityData,  Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+        $popGrowthDest = Storage::disk('dropbox')->putFileAs('/apps/nfcqs/pop-growth-rate', $popGrowthRate,  Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv', 'Contents');
+//        $commodityDest = Storage::putFileAs('/public/uploads/commodity-data', $commodityData,  Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
+//        $popGrowthDest = Storage::putFileAs('/public/uploads/pop-growth-rate', $popGrowthRate, Str::snake($province->province) . '_' . Str::snake($commodity->commodity) . '-' . Str::random(6) . '.csv');
 
         // create crop
         $crop = auth()->user()->crops()->create([
