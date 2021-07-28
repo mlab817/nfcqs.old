@@ -62,7 +62,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::resource('users', UserController::class);
 
-    Route::get('/download/{filePath}', DownloadFileController::class)->name('download_file');
+    Route::get('/download', DownloadFileController::class)->name('download_file');
 
 });
 

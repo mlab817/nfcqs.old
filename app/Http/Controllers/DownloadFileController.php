@@ -13,8 +13,12 @@ class DownloadFileController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function __invoke(Request $request, $filePath)
+    public function __invoke(Request $request)
     {
-        return Storage::disk('dropbox')->download($filePath);
+        $filePath = $request->get('filePath');
+
+        $file = Storage::disk('dropbox')->download($filePath);
+
+        return $file;
     }
 }
