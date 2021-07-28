@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Crop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -16,189 +17,43 @@ class ForecastController extends Controller
      */
     public function forecast(Request $request)
     {
+        // prepare inputs
         $cropId = $request->input('key');
         $remarks = trim($request->input('remarks'));
+        $areaShifter   = floatval(str_replace('%', '', $request->input('area'))) / 100;
+        $yieldShifter  = floatval(str_replace('%', '', $request->input('yield'))) / 100;
+        $consumptionShifter = floatval(str_replace('%', '', $request->input('consumption'))) / 100;
 
-        // remarks is a required
-        if ($remarks == '' OR $remarks == null) {
-            return ['remarks' => 'Remarks is required.'];
-        } elseif (strlen($remarks) > 75) {
-            return ['remarks' => 'Remarks length must not exceed 75 characters.'];
-        }
-
-        $commodity = DB::table('crop')
-            ->select('src_commodities.crop_type', 'crop.remarks')
-            ->leftJoin('src_commodities', 'crop.src_commodity_id', '=', 'src_commodities.id')
-            ->where('crop.id', $cropId)
-            ->first();
+        $commodity = Crop::findOrFail($cropId);
 
         // create new copy of commodity data
         // duplicate raw data every run of forecast
         // delete null remarks once first run is completed
         $cropId = $this->duplicate($cropId, $remarks, ($commodity->crop_type == 'Crop') ? 'crop' : 'non_crop', $commodity->remarks);
 
-        $commodity = DB::table('crop')
-            ->select('crop.*', 'src_commodities.commodity', 'src_commodities.crop_type')
-            ->leftJoin('src_commodities', 'crop.src_commodity_id', '=', 'src_commodities.id')
-            ->where('crop.id', $cropId)
-            ->first();
+        $commodity = Crop::find($cropId)->commodity;
 
-        if ($commodity != null) {
-            if ($commodity->crop_type == 'Crop') {
+        $validator = Validator::make(
+            [
+                'area' => $areaShifter,
+                'yield' => $yieldShifter,
+                'consumption' => $consumptionShifter,
+                'remarks' => $remarks,
+            ], [
+                'area' => 'required|numeric',
+                'yield' => 'required|numeric',
+                'consumption' => 'required|numeric',
+                'remarks' => 'required|string|max:75',
+            ]
+        );
 
-                // get shifters
-                $areaShifter = $request->input('area');
-                $yieldShifter = $request->input('yield');
-                $consumptionShifter = $request->input('consumption');
-
-                // remove percent sign
-                $areaShifter = str_replace('%', '', $areaShifter);
-                $yieldShifter = str_replace('%', '', $yieldShifter);
-                $consumptionShifter = str_replace('%', '', $consumptionShifter);
-
-                // percent to decimal value
-                $areaShifter = ($areaShifter == '' OR $areaShifter == null) ? 0 : $areaShifter;
-                $yieldShifter = ($yieldShifter == '' OR $yieldShifter == null) ? 0 : $yieldShifter;
-                $consumptionShifter = ($consumptionShifter == '' OR $consumptionShifter == null) ? 0 : $consumptionShifter;
-
-                // rules and conditions
-                $validator = Validator::make(
-                    [
-                        'area' => $areaShifter,
-                        'yield' => $yieldShifter,
-                        'consumption' => $consumptionShifter,
-                    ], [
-                        'area' => 'required|numeric',
-                        'yield' => 'required|numeric',
-                        'consumption' => 'required|numeric',
-                    ]
-                );
-
-                // vaidations
-                if ($validator->fails()) {
-                    return $validator->errors();
-                } else {
-
-                    // delete old record
-                    $deleted = DB::table('shifter')
-                        ->where('crop_id', $cropId)
-                        ->delete();
-
-                    if ($areaShifter != 0 OR $yieldShifter != 0 OR $consumptionShifter != 0) {
-
-                        // insert new record
-                        $inserted = DB::table('shifter')
-                            ->insertGetId([
-                                'crop_id' => $cropId,
-                                'area' => ($areaShifter != 0) ? $areaShifter / 100 : 0,
-                                'yield' => ($yieldShifter != 0) ? $yieldShifter / 100 : 0,
-                                'consumption' => ($consumptionShifter != 0) ? $consumptionShifter / 100 : 0,
-                                'production' => 0,
-                            ]);
-                    }
-                }
-
-                // forecast year will start right after 
-                // the last  actual data
-                $year = DB::table('crop_data')
-                    ->where('crop_id', $cropId)
-                    ->where('harvested_area_ha', '<>', 0)
-                    ->where('production_mt', '<>', 0)
-                    ->orderBy('year', 'DESC')
-                    ->first();
-
-                # Delete Old Result
-                DB::table('crop_forecast')
-                    ->where('crop_id', $cropId)
-                    ->delete();
-                
-                # Logarithmic Time Trend
-                $this->logarithmicTimeTrendProduction($cropId, $year->year, 'crop');
-                $this->logAgrConsumption($cropId, 'crop', 1);
-
-                # Annualized Growth Rate
-                $this->annualizedGrowthRateProduction($cropId, $year->year, 'crop');
-                $this->logAgrConsumption($cropId, 'crop', 2);
-
-                # Auto ARIMA
-                $this->autoArima($cropId, 'crop');
-                $this->getAutoArimaResult($cropId, 'crop');
-
-            } else {
-
-                // get shifters
-                $productionShifter = $request->input('production');
-                $consumptionShifter = $request->input('consumption');
-
-                // remove percent sign
-                $productionShifter = str_replace('%', '', $productionShifter);
-                $consumptionShifter = str_replace('%', '', $consumptionShifter);
-
-                // percent to decimal value
-                $productionShifter = ($productionShifter == '' OR $productionShifter == null) ? 0 : $productionShifter;
-                $consumptionShifter = ($consumptionShifter == '' OR $consumptionShifter == null) ? 0 : $consumptionShifter;
-
-                // rules and conditions
-                $validator = Validator::make(
-                    [
-                        'production' => $productionShifter,
-                        'consumption' => $consumptionShifter,
-                    ], [
-                        'production' => 'required|numeric',
-                        'consumption' => 'required|numeric',
-                    ]
-                );
-
-                // vaidations
-                if ($validator->fails()) {
-                    return $validator->errors();
-                } else {
-
-                    // delete old record
-                    $deleted = DB::table('shifter')
-                        ->where('crop_id', $cropId)
-                        ->delete();
-
-                    if ($productionShifter != 0 OR $consumptionShifter != 0) {
-
-                        // insert new record
-                        $inserted = DB::table('shifter')
-                            ->insertGetId([
-                                'crop_id' => $cropId,
-                                'production' => ($productionShifter != 0) ? $productionShifter / 100 : 0,
-                                'consumption' => ($consumptionShifter != 0) ? $consumptionShifter / 100 : 0,
-                                'area' => 0,
-                                'yield' => 0,
-                            ]);
-                    }
-                }
-
-                // forecast year will start right after 
-                // the last  actual data
-                $year = DB::table('non_crop_data')
-                    ->where('crop_id', $cropId)
-                    ->where('production_mt', '<>', 0)
-                    ->orderBy('year', 'DESC')
-                    ->first();
-
-                # Delete Old Result
-                DB::table('non_crop_forecast')
-                    ->where('crop_id', $cropId)
-                    ->delete();
-
-                # Logarithmic Time Trend
-                $this->logarithmicTimeTrendProduction($cropId, $year->year, 'non_crop');
-                $this->logAgrConsumption($cropId, 'non_crop', 1);
-
-                # Annualized Growth Rate
-                $this->annualizedGrowthRateProduction($cropId, $year->year, 'non_crop');
-                $this->logAgrConsumption($cropId, 'non_crop', 2);
-
-                # Auto ARIMA
-                $this->autoArima($cropId, 'non_crop');
-                $this->getAutoArimaResult($cropId, 'non_crop');
-
-            }
+        if ($validator->fails()) {
+            return $validator->errors();
+        } else {
+            // run projections
+            // ltt (note: apply ltt to consumption)
+            // cagr (note: apply cagr to consumption)
+            // arima
         }
 
         return "Forecast data successfully generated!";

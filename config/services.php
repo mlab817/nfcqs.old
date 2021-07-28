@@ -30,9 +30,12 @@ return [
     ],
 
     'stripe' => [
-        'model' => App\User::class,
+        'model' => App\Models\User::class,
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
 
+    'dropbox' => [
+        'authorization_token' => env('DROPBOX_ACCESS_TOKEN', null)
+    ],
 ];
