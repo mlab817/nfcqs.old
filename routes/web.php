@@ -48,6 +48,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('shifter', [InputController::class,'addShifter'])->name('add_shifter');
     Route::get('import-baseline', [InputController::class,'importBaseline'])->name('import_baseline');
     Route::delete('crop/{crop}/delete', [InputController::class,'deleteCrop'])->name('delete_crop');
+    Route::post('/uploads', [\App\Http\Controllers\UploadController::class,'store'])->name('uploads.store');
+    Route::get('/uploads', [\App\Http\Controllers\UploadController::class,'index'])->name('uploads.index');
 
     // forecast
     Route::post('forecast', [ForecastController::class,'forecast'])->name('forecast.post');

@@ -53,7 +53,7 @@
     <script src="<?php echo e(asset('vendor/sweetalert/dist/sweetalert.min.js')); ?>"></script>
     <script src="<?php echo e(asset('js/editable.min.js?' . $noCache)); ?>"></script>
     <script src="<?php echo e(asset('js/app.min.js?' . $noCache)); ?>"></script>
-    <?php echo $__env->yieldPushContent('scripts'); ?>
+
 </body>
 </html>
-<?php /**PATH /Users/marklesterbolotaolo/Desktop/laravel/nfcqs/resources/views/app.blade.php ENDPATH**/ ?>
+<?php /**PATH /Users/marklesterbolotaolo/Desktop/laravel/nfcqs/resources/views/layouts/app.blade.php ENDPATH**/ ?>

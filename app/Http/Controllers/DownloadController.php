@@ -21,6 +21,7 @@ class DownloadController extends Controller
      */
     public function provinceForecast(Request $request)
     {
+        $crop = $request->input('key');
         $province = $request->input('province');
         $model = $request->input('model');
         $download = $request->input('download');

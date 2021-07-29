@@ -53,6 +53,6 @@
     <script src="{{ asset('vendor/sweetalert/dist/sweetalert.min.js') }}"></script>
     <script src="{{ asset('js/editable.min.js?' . $noCache) }}"></script>
     <script src="{{ asset('js/app.min.js?' . $noCache) }}"></script>
-
+    @stack('scripts')
 </body>
 </html>

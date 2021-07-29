@@ -26,7 +26,7 @@
 				</a>
 			</li>
 				<li>
-					<a href="<?php echo e(url('commodities/add')); ?>">
+					<a href="<?php echo e(route('uploads.index')); ?>" class="open-popup">
 						<span class="menu-icon"><i class="fa fa-leaf" aria-hidden="true"></i></span>
 						<span class="menu-text">Upload Data</span>
 					</a>
