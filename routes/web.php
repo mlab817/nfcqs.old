@@ -7,6 +7,8 @@ use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\DownloadFileController;
 use App\Http\Controllers\ForecastController;
 use App\Http\Controllers\InputController;
+use App\Http\Controllers\OfficialDataController;
+use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -48,8 +50,11 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('shifter', [InputController::class,'addShifter'])->name('add_shifter');
     Route::get('import-baseline', [InputController::class,'importBaseline'])->name('import_baseline');
     Route::delete('crop/{crop}/delete', [InputController::class,'deleteCrop'])->name('delete_crop');
-    Route::post('/uploads', [\App\Http\Controllers\UploadController::class,'store'])->name('uploads.store');
-    Route::get('/uploads', [\App\Http\Controllers\UploadController::class,'index'])->name('uploads.index');
+    Route::post('/uploads', [UploadController::class,'store'])->name('uploads.store');
+    Route::get('/uploads', [UploadController::class,'index'])->name('uploads.index');
+
+    Route::delete('/official_data', [OfficialDataController::class,'destroy'])->name('official_data.destroy');
+    Route::get('/official_data', [OfficialDataController::class,'index'])->name('official_data.index');
 
     // forecast
     Route::post('forecast', [ForecastController::class,'forecast'])->name('forecast.post');

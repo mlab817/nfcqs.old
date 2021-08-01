@@ -21,9 +21,12 @@ class UploadController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->only('commodity_id','commodity_data'),[
+        $validator = Validator::make([
+            'commodity_id' => $request->input('commodity_id'),
+            'commodity_data' => $request->file('commodity_data')
+            ], [
             'commodity_id' => 'required|exists:src_commodities,id',
-            'commodity_data' => 'required|mimes:csv'
+            'commodity_data' => 'required|mimes:csv,txt'
         ]);
 
         if ($validator->fails()) {

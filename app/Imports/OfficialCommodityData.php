@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\OfficialData;
+use App\Models\SrcCommodity;
 use App\Models\SrcProvince;
 use Illuminate\Database\Eloquent\Model;
 use Maatwebsite\Excel\Concerns\Importable;
@@ -14,9 +15,12 @@ class OfficialCommodityData implements ToModel
 
     public $commodityId;
 
+    public $cropType;
+
     public function __construct(int $commodityId)
     {
         $this->commodityId = $commodityId;
+        $this->cropType = SrcCommodity::find($commodityId)->crop_type;
     }
 
     /**
@@ -27,15 +31,18 @@ class OfficialCommodityData implements ToModel
     {
         $province = SrcProvince::where('province','like','%'.trim(str_replace('.','',$row[1])).'%')->first();
         $production = floatval(str_replace(',','',  $row[2]));
-        $area = floatval(str_replace(',','',  $row[3]));
+        $area = $this->cropType == 'Non-Crop' ? null : floatval(str_replace(',','',  $row[3]));
 
-        return new OfficialData([
-            'year' => $row[0],
-            'src_commodity_id' => $this->commodityId,
-            'src_province_id' => $province->id,
-            'production' => $production,
-            'area_harvested' => $area,
-            'yield' => !$area ? null: $production / $area,
-        ]);
+        // data with no province will not be added
+        if ($province) {
+            return new OfficialData([
+                'year' => $row[0],
+                'src_commodity_id' => $this->commodityId,
+                'src_province_id' => $province->id,
+                'production' => $production,
+                'area_harvested' => $area,
+                'yield' => !$area ? null: $production / $area,
+            ]);
+        }
     }
 }
